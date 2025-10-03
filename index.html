@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -25,7 +26,7 @@
     .notice{border-left:4px solid var(--accent);padding:10px 12px;background:rgba(78,161,255,.08);border-radius:10px;margin:8px 0}
     .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);margin:22px 0}
   </style>
-  <!-- carrega pyodide no escopo global, comprovado que funciona no Pages -->
+  <!-- pyodide no escopo global, compatível com GitHub Pages -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 </head>
 <body>
@@ -33,7 +34,7 @@
     <header>
       <h1>Avaliação de Empresas Jovens com Python, implementação prática do FCD</h1>
       <div class="notice">
-        Use as células abaixo. Edite, clique em Rodar. Para gráficos, chame <code>showfig()</code>. Tudo roda no navegador, sem Colab.
+        Use as células abaixo, edite e clique em Rodar. Para gráficos, chame <code>showfig()</code>. Tudo roda no navegador.
       </div>
     </header>
 
@@ -179,10 +180,8 @@ print("Exemplo, WACC 22%, g 3%:", round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03
   </div>
 
   <script>
-    // Estado global
     let PY = null;
 
-    // Inicializa Pyodide e habilita botões
     async function boot(){
       const cells = document.querySelectorAll('.cell');
       const firstStatus = cells[0].querySelector('[data-status]');
@@ -190,7 +189,6 @@ print("Exemplo, WACC 22%, g 3%:", round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03
         firstStatus.textContent = 'baixando pacotes…';
         PY = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/" });
         await PY.loadPackage(["numpy","matplotlib"]);
-        // define showfig
         await PY.runPythonAsync(`
 import matplotlib
 matplotlib.use('agg')
@@ -201,19 +199,17 @@ def showfig():
     plt.tight_layout()
     plt.savefig(buf, format='png', dpi=160, bbox_inches='tight')
     buf.seek(0)
-    sys.stdout.write('\\n__IMG__' + base64.b64encode(buf.getvalue()).decode('ascii'))
+    sys.stdout.write('__IMG__' + base64.b64encode(buf.getvalue()).decode('ascii'))
     plt.close('all')
 `);
-        // habilita todos os run
         document.querySelectorAll('.cell .cell-run').forEach(b => b.disabled = false);
-        document.querySelectorAll('.cell [data-status]').forEach(s => s.textContent = 'pronto');
+        document.querySelectorAll('.cell [data-status]').forEach(s => s.textContent = 'ok');
       }catch(e){
         firstStatus.textContent = 'erro ao carregar, ' + (e && e.message ? e.message : e);
         console.error(e);
       }
     }
 
-    // Handler de execução
     function attach(){
       document.querySelectorAll('.cell').forEach(cell => {
         const run = cell.querySelector('[data-run]');
@@ -229,30 +225,35 @@ def showfig():
           try {
             const ret = await PY.runPythonAsync(ta.value);
             if (ret && typeof ret === 'string' && ret.includes('__IMG__')){
-              buf += ret; // caso a célula retorne string com imagem
+              buf += ret;
             }
           } catch(e) {
             buf += '\nErro: ' + (e && e.message ? e.message : e);
           } finally {
             PY.setStdout(o1); PY.setStderr(o2);
           }
-          const parts = (buf||'').split('__IMG__');
-          const text = parts.shift() || '(sem saída)';
-          out.textContent = text;
-          for(const b64 of parts){
+          let parts = (buf || '').split('__IMG__');
+          const images = parts.slice(1).map(s => s.trim()).filter(s => s.length > 10);
+          const text = (parts[0] || '').trim();
+
+          if (text) out.textContent = text;
+          else if (images.length) out.textContent = '(gráfico gerado)';
+          else out.textContent = '(sem saída)';
+
+          for (const b64 of images) {
             const img = new Image();
-            img.src = 'data:image/png;base64,' + b64.trim();
+            img.src = 'data:image/png;base64,' + b64;
             img.style.maxWidth = '100%';
             img.loading = 'lazy';
             img.decoding = 'async';
             out.appendChild(img);
           }
+
           status.textContent = 'ok'; run.disabled = false;
         });
       });
     }
 
-    // Start
     attach(); boot();
   </script>
 </body>
