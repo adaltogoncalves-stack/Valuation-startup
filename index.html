@@ -3,35 +3,49 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pyodide • Teste rápido</title>
+  <title>Pyodide • Teste com logs</title>
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#0b1220;color:#e8eefc}
     button{background:#4ea1ff;border:0;border-radius:10px;color:#041022;font-weight:700;padding:10px 14px;cursor:pointer}
+    button[disabled]{opacity:.6;cursor:not-allowed}
     pre{background:#0b1424;border:1px solid rgba(255,255,255,.12);padding:12px;border-radius:10px;white-space:pre-wrap}
     .out{min-height:48px}
+    .log{font-family:ui-monospace,Consolas,Menlo,monospace;background:#0b1424;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.12);margin:8px 0}
   </style>
 </head>
 <body>
   <h1>Pyodide no GitHub Pages</h1>
-  <p>Se o botão abaixo imprimir versões e fizer um gráfico simples, está tudo certo.</p>
-  <button id="run">Rodar teste</button>
+  <div class="log"><strong>Status:</strong> <span id="status">iniciando…</span></div>
+
+  <button id="run" disabled>Rodar teste</button>
   <h3>Saída</h3>
   <pre id="out" class="out">(aguardando)</pre>
 
-  <!-- Módulo ES com top-level await: funciona no GitHub Pages -->
+  <!-- MÓDULO sem top-level await. Com fallback de CDN e logs. -->
   <script type="module">
-    import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js";
-    const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full";
+    const statusEl = document.getElementById("status");
     const out = document.getElementById("out");
+    const runBtn = document.getElementById("run");
 
-    const pyodide = await loadPyodide({
-      indexURL,
-      stdout: s => out.textContent += s,
-      stderr: s => out.textContent += s
-    });
-    await pyodide.loadPackage(["numpy","matplotlib"]);
+    // CDN primário e alternativo
+    const CDN1 = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full";
+    const CDN2 = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full";
 
-    await pyodide.runPythonAsync(`
+    let pyodide = null;
+
+    async function boot(indexURL){
+      statusEl.textContent = "baixando pyodide.js de " + indexURL + " …";
+      const { loadPyodide } = await import(indexURL + "/pyodide.js");
+      statusEl.textContent = "carregando Pyodide…";
+      const p = await loadPyodide({
+        indexURL,
+        stdout: s => out.textContent += s,
+        stderr: s => out.textContent += s
+      });
+      statusEl.textContent = "baixando pacotes (numpy, matplotlib)…";
+      await p.loadPackage(["numpy","matplotlib"]);
+      statusEl.textContent = "injetando showfig()…";
+      await p.runPythonAsync(`
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -45,8 +59,33 @@ def showfig():
     plt.close('all')
 print("Pyodide pronto.")
 `);
+      return p;
+    }
 
-    document.getElementById("run").addEventListener("click", async () => {
+    (async () => {
+      try {
+        pyodide = await boot(CDN1);
+        statusEl.textContent = "pronto";
+        runBtn.disabled = false;
+      } catch (e1) {
+        console.error(e1);
+        statusEl.textContent = "falhou CDN primário, tentando alternativo…";
+        try {
+          pyodide = await boot(CDN2);
+          statusEl.textContent = "pronto (CDN alternativo)";
+          runBtn.disabled = false;
+        } catch (e2) {
+          console.error(e2);
+          statusEl.textContent = "ERRO ao inicializar: " + (e2?.message || e2);
+          out.textContent = "Detalhes no console do navegador.";
+        }
+      }
+    })();
+
+    runBtn.addEventListener("click", async () => {
+      if (!pyodide) return;
+      runBtn.disabled = true;
+      statusEl.textContent = "executando…";
       out.textContent = "";
       let buf = "";
       const o1 = pyodide.setStdout({ batched: s => buf += s });
@@ -75,6 +114,8 @@ showfig()
         img.style.maxWidth = "100%";
         document.body.appendChild(img);
       }
+      statusEl.textContent = "ok";
+      runBtn.disabled = false;
     });
   </script>
 </body>
