@@ -1,59 +1,259 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <title>Pyodide Teste</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Avaliação de Empresas Jovens com Python — FCD no navegador</title>
+  <meta name="description" content="Página standalone que executa Python no navegador via Pyodide. Implementação prática de FCD para empresas jovens.">
   <style>
-    body{background:#0b1220;color:#e8eefc;font-family:sans-serif;padding:20px}
-    button{background:#4ea1ff;color:#041022;padding:10px 14px;border:0;border-radius:10px;font-weight:bold}
-    pre{background:#0b1424;padding:12px;border-radius:10px}
+    :root{--bg:#0b1220;--panel:#111a2b;--panel2:#0f1626;--muted:#b9c2d0;--text:#e8eefc;--accent:#4ea1ff}
+    html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;margin:0}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px 14px}
+    h1{font-size:1.9rem;margin:0 0 8px}
+    h2{font-size:1.35rem;margin:18px 0 8px}
+    p,li{color:#d7e2f4}
+    .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:14px;margin:16px 0}
+    .cell{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-top:12px}
+    .cell-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.06)}
+    .cell-title{font-weight:700}
+    .cell-status{font-size:.85rem;color:var(--muted)}
+    .cell-run{appearance:none;border:0;border-radius:10px;background:var(--accent);color:#041022;font-weight:800;padding:9px 13px;cursor:pointer}
+    .cell-run[disabled]{opacity:.6;cursor:not-allowed}
+    textarea{width:100%;min-height:160px;resize:vertical;color:#e5efff;background:#0b1424;border:none;outline:none;padding:14px;line-height:1.4;font-size:.92rem;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .out{background:#07101f;border-top:1px solid rgba(255,255,255,.06);padding:12px;font-family:ui-monospace,Consolas,Menlo,monospace;color:#d6e3ff;white-space:pre-wrap;overflow-x:auto;min-height:42px}
+    .out img{max-width:100%;border-radius:10px;display:block;margin:12px 0}
+    .notice{border-left:4px solid var(--accent);padding:10px 12px;background:rgba(78,161,255,.08);border-radius:10px;margin:8px 0}
+    .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);margin:22px 0}
   </style>
-  <!-- carrega pyodide diretamente -->
+  <!-- carrega pyodide no escopo global, comprovado que funciona no Pages -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 </head>
 <body>
-  <h1>Pyodide no GitHub Pages</h1>
-  <p id="status">Carregando...</p>
-  <button id="run" disabled>Rodar teste</button>
-  <h3>Saída:</h3>
-  <pre id="out">(aguardando)</pre>
+  <div class="wrap">
+    <header>
+      <h1>Avaliação de Empresas Jovens com Python, implementação prática do FCD</h1>
+      <div class="notice">
+        Use as células abaixo. Edite, clique em Rodar. Para gráficos, chame <code>showfig()</code>. Tudo roda no navegador, sem Colab.
+      </div>
+    </header>
 
-  <script>
-    let pyodide;
-
-    async function main(){
-      document.getElementById("status").textContent="Baixando pacotes...";
-      pyodide = await loadPyodide({indexURL:"https://cdn.jsdelivr.net/pyodide/v0.25.1/full/"});
-      await pyodide.loadPackage(["numpy","matplotlib"]);
-      document.getElementById("status").textContent="Pronto!";
-      document.getElementById("run").disabled=false;
-    }
-
-    main();
-
-    document.getElementById("run").onclick=async()=>{
-      document.getElementById("out").textContent="executando...";
-      let code=`
-import sys, numpy as np, matplotlib, matplotlib.pyplot as plt, io, base64
+    <section class="panel">
+      <h2>Setup do ambiente</h2>
+      <p>Inicializa Pyodide, carrega NumPy e Matplotlib, define <code>showfig()</code>.</p>
+      <div class="cell" id="cell-setup">
+        <div class="cell-head">
+          <div class="cell-title">Python</div>
+          <div class="cell-status" data-status>carregando…</div>
+          <button class="cell-run" data-run disabled>Rodar</button>
+        </div>
+        <textarea spellcheck="false">import sys, numpy as np, matplotlib, matplotlib.pyplot as plt
 print("Python:", sys.version.split()[0])
 print("NumPy:", np.__version__)
 print("Matplotlib:", matplotlib.__version__)
+# gráfico rápido
 x = np.linspace(0,6.28,200); y = np.sin(x)
 plt.plot(x,y); plt.title("Seno")
-buf=io.BytesIO(); plt.savefig(buf,format="png"); buf.seek(0)
-"__IMG__"+base64.b64encode(buf.getvalue()).decode("ascii")
-`;
-      let result = await pyodide.runPythonAsync(code);
-      let parts = result.split("__IMG__");
-      let txt = parts[0];
-      document.getElementById("out").textContent=txt;
-      if(parts[1]){
-        let img=new Image();
-        img.src="data:image/png;base64,"+parts[1];
-        img.style.maxWidth="100%";
-        document.body.appendChild(img);
+showfig()</textarea>
+        <div class="out" data-out>(aguardando)</div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section class="panel">
+      <h2>FCD básico, empresa jovem</h2>
+      <p>Premissas simples para aula, ajuste como quiser.</p>
+      <div class="cell">
+        <div class="cell-head">
+          <div class="cell-title">Python</div>
+          <div class="cell-status" data-status>pronto</div>
+          <button class="cell-run" data-run disabled>Rodar</button>
+        </div>
+<textarea spellcheck="false"># Parâmetros
+anos = 10
+receita0 = 2.0e6
+crec = [0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.18,0.16,0.15]
+margem_ebitda = [-0.30,-0.20,-0.10,0.05,0.10,0.15,0.18,0.20,0.22,0.25]
+capex_sobre_receita = 0.06
+nwc_sobre_receita = 0.08
+aliquota = 0.0
+wacc = 0.20
+
+# Projeção de receitas
+receita=[receita0]
+for t in range(anos):
+    receita.append(receita[-1]*(1+crec[t]))
+receita=receita[1:]
+
+import numpy as np, matplotlib.pyplot as plt
+
+# Demonstração
+ebitda=[r*m for r,m in zip(receita,margem_ebitda)]
+dep=[0.03*r for r in receita]
+ebite=[e-d for e,d in zip(ebitda,dep)]
+
+lucro_oper=[]; imposto=[]; prejuizo_acum=0.0
+for e in ebite:
+    base = e - max(prejuizo_acum,0)
+    imp = max(base,0)*aliquota
+    imposto.append(imp)
+    lucro_oper.append(e-imp)
+    prejuizo_acum += min(e,0)
+
+nwc=[nwc_sobre_receita*r for r in receita]
+capex=[capex_sobre_receita*r for r in receita]
+
+fcl=[]
+for t in range(anos):
+    delta_nwc = nwc[t] - (nwc[t-1] if t>0 else 0)
+    fcl.append(lucro_oper[t] + dep[t] - capex[t] - delta_nwc)
+
+# Valor terminal em perpetuidade
+g=0.04
+vt=fcl[-1]*(1+g)/(wacc-g)
+
+# Desconto
+fc_desc=[f/((1+wacc)**(t+1)) for t,f in enumerate(fcl)]
+vt_desc=vt/((1+wacc)**anos)
+valor_empre=sum(fc_desc)+vt_desc
+print(f"Valor da firma, R$ {valor_empre:,.0f}")
+
+# Gráfico
+plt.figure(figsize=(6.6,3.6))
+plt.plot(range(1,anos+1), fcl, marker='o')
+plt.title('Fluxo de Caixa Livre projetado')
+plt.xlabel('Ano'); plt.ylabel('R$')
+showfig()</textarea>
+        <div class="out" data-out>(aguardando)</div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section class="panel">
+      <h2>Sensibilidade WACC × g</h2>
+      <p>Mapa rápido de valor com WACC e crescimento terminal.</p>
+      <div class="cell">
+        <div class="cell-head">
+          <div class="cell-title">Python</div>
+          <div class="cell-status" data-status>pronto</div>
+          <button class="cell-run" data-run disabled>Rodar</button>
+        </div>
+<textarea spellcheck="false">import numpy as np, matplotlib.pyplot as plt
+
+def valor_firma_wacc_g(fcl, anos, wacc, g):
+    vt = fcl[-1]*(1+g)/(wacc-g)
+    fc_desc=[f/((1+wacc)**(t+1)) for t,f in enumerate(fcl)]
+    vt_desc=vt/((1+wacc)**anos)
+    return sum(fc_desc)+vt_desc
+
+# Reusa fcl/anos se vier da célula anterior, caso contrário cria um exemplo
+try:
+    fcl
+    anos
+except NameError:
+    fcl=[-1e6,-5e5,2e5,6e5,1.1e6,1.6e6,2.0e6,2.4e6,2.7e6,3.0e6]
+    anos=len(fcl)
+
+wacc_grid=np.linspace(0.14,0.28,8)
+g_grid=np.linspace(0.01,0.05,5)
+mat=np.zeros((len(wacc_grid),len(g_grid)))
+for i,w in enumerate(wacc_grid):
+    for j,g in enumerate(g_grid):
+        mat[i,j]=valor_firma_wacc_g(fcl, anos, w, g)
+
+plt.figure(figsize=(6.5,4.2))
+plt.imshow(mat,origin='lower',aspect='auto')
+plt.xticks(range(len(g_grid)),[f"{g:.2%}" for g in g_grid])
+plt.yticks(range(len(wacc_grid)),[f"{w:.0%}" for w in wacc_grid])
+plt.xlabel('g terminal'); plt.ylabel('WACC'); plt.title('Sensibilidade do Valor da Firma')
+showfig()
+print("Exemplo, WACC 22%, g 3%:", round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03)))</textarea>
+        <div class="out" data-out>(aguardando)</div>
+      </div>
+    </section>
+
+    <footer style="opacity:.75;margin-top:26px">
+      <small>Roda localmente via Pyodide. O primeiro carregamento pode demorar um pouco.</small>
+    </footer>
+  </div>
+
+  <script>
+    // Estado global
+    let PY = null;
+
+    // Inicializa Pyodide e habilita botões
+    async function boot(){
+      const cells = document.querySelectorAll('.cell');
+      const firstStatus = cells[0].querySelector('[data-status]');
+      try{
+        firstStatus.textContent = 'baixando pacotes…';
+        PY = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/" });
+        await PY.loadPackage(["numpy","matplotlib"]);
+        // define showfig
+        await PY.runPythonAsync(`
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import io, base64, sys
+def showfig():
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png', dpi=160, bbox_inches='tight')
+    buf.seek(0)
+    sys.stdout.write('\\n__IMG__' + base64.b64encode(buf.getvalue()).decode('ascii'))
+    plt.close('all')
+`);
+        // habilita todos os run
+        document.querySelectorAll('.cell .cell-run').forEach(b => b.disabled = false);
+        document.querySelectorAll('.cell [data-status]').forEach(s => s.textContent = 'pronto');
+      }catch(e){
+        firstStatus.textContent = 'erro ao carregar, ' + (e && e.message ? e.message : e);
+        console.error(e);
       }
-    };
+    }
+
+    // Handler de execução
+    function attach(){
+      document.querySelectorAll('.cell').forEach(cell => {
+        const run = cell.querySelector('[data-run]');
+        const out = cell.querySelector('[data-out]');
+        const status = cell.querySelector('[data-status]');
+        const ta = cell.querySelector('textarea');
+        run.addEventListener('click', async () => {
+          if(!PY) return;
+          run.disabled = true; status.textContent = 'executando…'; out.textContent = '';
+          let buf = '';
+          const o1 = PY.setStdout({ batched: s => buf += s });
+          const o2 = PY.setStderr({ batched: s => buf += s });
+          try {
+            const ret = await PY.runPythonAsync(ta.value);
+            if (ret && typeof ret === 'string' && ret.includes('__IMG__')){
+              buf += ret; // caso a célula retorne string com imagem
+            }
+          } catch(e) {
+            buf += '\nErro: ' + (e && e.message ? e.message : e);
+          } finally {
+            PY.setStdout(o1); PY.setStderr(o2);
+          }
+          const parts = (buf||'').split('__IMG__');
+          const text = parts.shift() || '(sem saída)';
+          out.textContent = text;
+          for(const b64 of parts){
+            const img = new Image();
+            img.src = 'data:image/png;base64,' + b64.trim();
+            img.style.maxWidth = '100%';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            out.appendChild(img);
+          }
+          status.textContent = 'ok'; run.disabled = false;
+        });
+      });
+    }
+
+    // Start
+    attach(); boot();
   </script>
 </body>
 </html>
