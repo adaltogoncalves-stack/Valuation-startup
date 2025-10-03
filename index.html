@@ -68,4 +68,14 @@ showfig()
       }
       const parts = buf.split("__IMG__");
       out.textContent = parts.shift() || "(sem saída)";
-      for (
+      for (const b64 of parts) {
+        const img = new Image();
+        img.src = "data:image/png;base64," + b64.trim();
+        img.style.display = "block";
+        img.style.maxWidth = "100%";
+        document.body.appendChild(img);
+      }
+    });
+  </script>
+</body>
+</html>
