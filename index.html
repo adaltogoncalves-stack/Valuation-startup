@@ -1,122 +1,59 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pyodide • Teste com logs</title>
+  <meta charset="utf-8">
+  <title>Pyodide Teste</title>
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#0b1220;color:#e8eefc}
-    button{background:#4ea1ff;border:0;border-radius:10px;color:#041022;font-weight:700;padding:10px 14px;cursor:pointer}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    pre{background:#0b1424;border:1px solid rgba(255,255,255,.12);padding:12px;border-radius:10px;white-space:pre-wrap}
-    .out{min-height:48px}
-    .log{font-family:ui-monospace,Consolas,Menlo,monospace;background:#0b1424;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.12);margin:8px 0}
+    body{background:#0b1220;color:#e8eefc;font-family:sans-serif;padding:20px}
+    button{background:#4ea1ff;color:#041022;padding:10px 14px;border:0;border-radius:10px;font-weight:bold}
+    pre{background:#0b1424;padding:12px;border-radius:10px}
   </style>
+  <!-- carrega pyodide diretamente -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 </head>
 <body>
   <h1>Pyodide no GitHub Pages</h1>
-  <div class="log"><strong>Status:</strong> <span id="status">iniciando…</span></div>
-
+  <p id="status">Carregando...</p>
   <button id="run" disabled>Rodar teste</button>
-  <h3>Saída</h3>
-  <pre id="out" class="out">(aguardando)</pre>
+  <h3>Saída:</h3>
+  <pre id="out">(aguardando)</pre>
 
-  <!-- MÓDULO sem top-level await. Com fallback de CDN e logs. -->
-  <script type="module">
-    const statusEl = document.getElementById("status");
-    const out = document.getElementById("out");
-    const runBtn = document.getElementById("run");
+  <script>
+    let pyodide;
 
-    // CDN primário e alternativo
-    const CDN1 = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full";
-    const CDN2 = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full";
-
-    let pyodide = null;
-
-    async function boot(indexURL){
-      statusEl.textContent = "baixando pyodide.js de " + indexURL + " …";
-      const { loadPyodide } = await import(indexURL + "/pyodide.js");
-      statusEl.textContent = "carregando Pyodide…";
-      const p = await loadPyodide({
-        indexURL,
-        stdout: s => out.textContent += s,
-        stderr: s => out.textContent += s
-      });
-      statusEl.textContent = "baixando pacotes (numpy, matplotlib)…";
-      await p.loadPackage(["numpy","matplotlib"]);
-      statusEl.textContent = "injetando showfig()…";
-      await p.runPythonAsync(`
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-import io, base64, sys
-def showfig():
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=160, bbox_inches='tight')
-    buf.seek(0)
-    sys.stdout.write('\\n__IMG__' + base64.b64encode(buf.getvalue()).decode('ascii'))
-    plt.close('all')
-print("Pyodide pronto.")
-`);
-      return p;
+    async function main(){
+      document.getElementById("status").textContent="Baixando pacotes...";
+      pyodide = await loadPyodide({indexURL:"https://cdn.jsdelivr.net/pyodide/v0.25.1/full/"});
+      await pyodide.loadPackage(["numpy","matplotlib"]);
+      document.getElementById("status").textContent="Pronto!";
+      document.getElementById("run").disabled=false;
     }
 
-    (async () => {
-      try {
-        pyodide = await boot(CDN1);
-        statusEl.textContent = "pronto";
-        runBtn.disabled = false;
-      } catch (e1) {
-        console.error(e1);
-        statusEl.textContent = "falhou CDN primário, tentando alternativo…";
-        try {
-          pyodide = await boot(CDN2);
-          statusEl.textContent = "pronto (CDN alternativo)";
-          runBtn.disabled = false;
-        } catch (e2) {
-          console.error(e2);
-          statusEl.textContent = "ERRO ao inicializar: " + (e2?.message || e2);
-          out.textContent = "Detalhes no console do navegador.";
-        }
-      }
-    })();
+    main();
 
-    runBtn.addEventListener("click", async () => {
-      if (!pyodide) return;
-      runBtn.disabled = true;
-      statusEl.textContent = "executando…";
-      out.textContent = "";
-      let buf = "";
-      const o1 = pyodide.setStdout({ batched: s => buf += s });
-      const o2 = pyodide.setStderr({ batched: s => buf += s });
-      try {
-        await pyodide.runPythonAsync(`
-import sys, numpy as np, matplotlib, matplotlib.pyplot as plt
+    document.getElementById("run").onclick=async()=>{
+      document.getElementById("out").textContent="executando...";
+      let code=`
+import sys, numpy as np, matplotlib, matplotlib.pyplot as plt, io, base64
 print("Python:", sys.version.split()[0])
 print("NumPy:", np.__version__)
 print("Matplotlib:", matplotlib.__version__)
 x = np.linspace(0,6.28,200); y = np.sin(x)
 plt.plot(x,y); plt.title("Seno")
-showfig()
-`);
-      } catch (e) {
-        buf += "\\nErro: " + (e?.message || e);
-      } finally {
-        pyodide.setStdout(o1); pyodide.setStderr(o2);
-      }
-      const parts = buf.split("__IMG__");
-      out.textContent = parts.shift() || "(sem saída)";
-      for (const b64 of parts) {
-        const img = new Image();
-        img.src = "data:image/png;base64," + b64.trim();
-        img.style.display = "block";
-        img.style.maxWidth = "100%";
+buf=io.BytesIO(); plt.savefig(buf,format="png"); buf.seek(0)
+"__IMG__"+base64.b64encode(buf.getvalue()).decode("ascii")
+`;
+      let result = await pyodide.runPythonAsync(code);
+      let parts = result.split("__IMG__");
+      let txt = parts[0];
+      document.getElementById("out").textContent=txt;
+      if(parts[1]){
+        let img=new Image();
+        img.src="data:image/png;base64,"+parts[1];
+        img.style.maxWidth="100%";
         document.body.appendChild(img);
       }
-      statusEl.textContent = "ok";
-      runBtn.disabled = false;
-    });
+    };
   </script>
 </body>
 </html>
