@@ -13,21 +13,24 @@
 </head>
 <body>
   <h1>Pyodide no GitHub Pages</h1>
-  <p>Se o botão abaixo imprimir versões e fizer um gráfico simples, o Pyodide está OK.</p>
-
-  <div>
-    <button id="run">Rodar teste</button>
-  </div>
+  <p>Se o botão abaixo imprimir versões e fizer um gráfico simples, está tudo certo.</p>
+  <button id="run">Rodar teste</button>
   <h3>Saída</h3>
   <pre id="out" class="out">(aguardando)</pre>
 
-  <!-- Versão módulo. O GitHub Pages permite module + top-level await -->
+  <!-- Módulo ES com top-level await: funciona no GitHub Pages -->
   <script type="module">
     import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js";
     const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full";
     const out = document.getElementById("out");
-    const pyodide = await loadPyodide({ indexURL, stdout: s => out.textContent += s, stderr: s => out.textContent += s });
+
+    const pyodide = await loadPyodide({
+      indexURL,
+      stdout: s => out.textContent += s,
+      stderr: s => out.textContent += s
+    });
     await pyodide.loadPackage(["numpy","matplotlib"]);
+
     await pyodide.runPythonAsync(`
 import matplotlib
 matplotlib.use('agg')
@@ -59,20 +62,10 @@ plt.plot(x,y); plt.title("Seno")
 showfig()
 `);
       } catch (e) {
-        buf += "\\nErro: " + (e.message || e);
+        buf += "\\nErro: " + (e?.message || e);
       } finally {
         pyodide.setStdout(o1); pyodide.setStderr(o2);
       }
       const parts = buf.split("__IMG__");
       out.textContent = parts.shift() || "(sem saída)";
-      for (const b64 of parts) {
-        const img = new Image();
-        img.src = "data:image/png;base64," + b64.trim();
-        img.style.display = "block";
-        img.style.maxWidth = "100%";
-        document.body.appendChild(img);
-      }
-    });
-  </script>
-</body>
-</html>
+      for (
