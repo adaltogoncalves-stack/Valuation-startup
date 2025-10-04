@@ -1,273 +1,436 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Avaliação de Empresas Jovens com Python — FCD no navegador</title>
-  <meta name="description" content="Página standalone que executa Python no navegador via Pyodide. Implementação prática de FCD para empresas jovens.">
-  <style>
-    :root{--bg:#0b1220;--panel:#111a2b;--panel2:#0f1626;--muted:#b9c2d0;--text:#e8eefc;--accent:#4ea1ff}
-    html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;margin:0}
-    .wrap{max-width:1100px;margin:0 auto;padding:24px 14px}
-    h1{font-size:1.9rem;margin:0 0 8px}
-    h2{font-size:1.35rem;margin:18px 0 8px}
-    p,li{color:#d7e2f4}
-    .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:14px;margin:16px 0}
-    .cell{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-top:12px}
-    .cell-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.06)}
-    .cell-title{font-weight:700}
-    .cell-status{font-size:.85rem;color:var(--muted)}
-    .cell-run{appearance:none;border:0;border-radius:10px;background:var(--accent);color:#041022;font-weight:800;padding:9px 13px;cursor:pointer}
-    .cell-run[disabled]{opacity:.6;cursor:not-allowed}
-    textarea{width:100%;min-height:160px;resize:vertical;color:#e5efff;background:#0b1424;border:none;outline:none;padding:14px;line-height:1.4;font-size:.92rem;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .out{background:#07101f;border-top:1px solid rgba(255,255,255,.06);padding:12px;font-family:ui-monospace,Consolas,Menlo,monospace;color:#d6e3ff;white-space:pre-wrap;overflow-x:auto;min-height:42px}
-    .out img{max-width:100%;border-radius:10px;display:block;margin:12px 0}
-    .notice{border-left:4px solid var(--accent);padding:10px 12px;background:rgba(78,161,255,.08);border-radius:10px;margin:8px 0}
-    .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);margin:22px 0}
-  </style>
-  <!-- Pyodide global, compatível com GitHub Pages -->
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Valuation de uma EdTech B2B com Monte Carlo • Curso prático</title>
+<meta name="description" content="Curso prático e interativo: storytelling de negócio, premissas, DRE e balanço simplificados, FCL, Monte Carlo e leitura dos resultados. Roda no navegador com Pyodide.">
+<style>
+:root{--bg:#0b1220;--panel:#111a2b;--panel2:#0f1626;--muted:#b9c2d0;--text:#e8eefc;--accent:#4ea1ff;--ok:#56d17c;--warn:#ffcd4e}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6}
+.wrap{max-width:1100px;margin:0 auto;padding:26px 14px}
+h1{font-size:1.9rem;margin:.2rem 0 .3rem}
+h2{font-size:1.35rem;margin:1.2rem 0 .4rem}
+h3{font-size:1.1rem;margin:.9rem 0 .35rem}
+p,li{color:#d7e2f4}
+small{opacity:.85}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:16px;margin:16px 0}
+.hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);margin:22px 0}
+.notice{border-left:4px solid var(--accent);padding:10px 12px;background:rgba(78,161,255,.08);border-radius:10px;margin:8px 0}
+.badge{display:inline-block;padding:.15rem .45rem;border-radius:.5rem;font-weight:700;font-size:.75rem}
+.badge.ok{background:rgba(86,209,124,.12);color:var(--ok);border:1px solid rgba(86,209,124,.35)}
+.badge.warn{background:rgba(255,205,78,.12);color:var(--warn);border:1px solid rgba(255,205,78,.35)}
+.center{display:flex;gap:.6rem;align-items:center}
+
+/* células de código */
+.cell{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-top:12px}
+.cell-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.06)}
+.cell-title{font-weight:700}
+.cell-status{font-size:.85rem;color:var(--muted)}
+.cell-run{appearance:none;border:0;border-radius:10px;background:var(--accent);color:#041022;font-weight:800;padding:9px 13px;cursor:pointer}
+.cell-run[disabled]{opacity:.6;cursor:not-allowed}
+textarea{width:100%;min-height:160px;resize:vertical;color:#e5efff;background:#0b1424;border:none;outline:none;padding:14px;line-height:1.4;font-size:.92rem;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+.out{background:#07101f;border-top:1px solid rgba(255,255,255,.06);padding:12px;font-family:ui-monospace,Consolas,Menlo,monospace;color:#d6e3ff;white-space:pre-wrap;overflow-x:auto;min-height:42px}
+.out img{max-width:100%;border-radius:10px;display:block;margin:12px 0}
+</style>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Avaliação de Empresas Jovens com Python, implementação prática do FCD</h1>
-      <div class="notice">
-        Use as células abaixo, edite e clique em Rodar. Para gráficos, finalize a célula com <code>print(figb64())</code>. Tudo roda no navegador.
+<div class="wrap">
+
+  <header>
+    <h1>Valuation de uma EdTech B2B com Monte Carlo</h1>
+    <div class="notice">
+      Estudo de caso da EduConnect, plataforma de aprendizagem B2B que licencia conteúdo e trilhas para escolas e empresas. Vamos ligar a narrativa do negócio às premissas, construir DRE e balanço simplificados, projetar FCL e rodar Monte Carlo. Código apresentado aos poucos, aluno entende o porquê antes do como. Roda localmente no navegador.
+    </div>
+    <div class="center" style="gap:.6rem;margin:.4rem 0 0">
+      <span class="badge ok" id="boot-state">Carregando ambiente…</span>
+      <small>Na primeira vez baixa pacotes. Depois fica ágil.</small>
+    </div>
+  </header>
+
+  <div class="hr"></div>
+
+  <!-- 1. Storytelling -->
+  <section class="panel">
+    <h2>1. Storytelling do negócio</h2>
+    <p>EduConnect vende licenças anuais para escolas e empresas. Receita nasce do número de clientes ativos, do ticket anual por cliente e da taxa de renovação. A máquina de lucro vem da margem de contribuição sobre a receita, descontadas despesas de pessoal e estrutura que crescem com a base. O ciclo de caixa captura prazos de recebimento e pagamento, que chamaremos de capital de giro líquido em percentual da receita.</p>
+    <p>O que coletamos do mundo real. clientes atuais, taxa de aquisição recente, taxa de churn em contratos, ticket médio por instituição, uso médio dos colaboradores, custos de conteúdo, equipe comercial e suporte, CAPEX de implantação por cliente, tributos, custo de capital. Onde não houver dados, inferimos valores com bom senso e documentamos a fonte.</p>
+  </section>
+
+  <!-- 2. Premissas mínimas -->
+  <section class="panel">
+    <h2>2. Premissas mínimas, versão didática</h2>
+    <p>Começamos pequeno. Quatro itens que movem a receita. Depois adicionamos custos e capital de giro. Objetivo, ver um DRE e um fluxo básicos funcionando. Em seguida refinamos.</p>
+
+    <div class="cell">
+      <div class="cell-head">
+        <div class="cell-title">Premissas de receita</div>
+        <div class="cell-status" data-status>ok</div>
+        <button class="cell-run" data-run disabled>Rodar</button>
       </div>
-    </header>
+<textarea spellcheck="false"># Premissas iniciais da EduConnect B2B
+initial_clients = 80                 # escolas e empresas ativas hoje
+growth_rate = 0.60                   # novos clientes por base, por ano
+churn_rate  = 0.15                   # cancelamentos por base, por ano
+ticket_annual = 14000                # R$ por cliente ao ano
 
-    <section class="panel">
-      <h2>Setup do ambiente</h2>
-      <p>Inicializa Pyodide, carrega NumPy e Matplotlib, valida versões e gera um gráfico simples.</p>
-      <div class="cell" id="cell-setup">
-        <div class="cell-head">
-          <div class="cell-title">Python</div>
-          <div class="cell-status" data-status>carregando…</div>
-          <button class="cell-run" data-run disabled>Rodar</button>
-        </div>
-<textarea spellcheck="false">import sys, numpy as np, matplotlib, matplotlib.pyplot as plt
-print("Python:", sys.version.split()[0])
-print("NumPy:", np.__version__)
-print("Matplotlib:", matplotlib.__version__)
-x = np.linspace(0,6.28,200)
-y = np.sin(x)
-plt.plot(x,y); plt.title("Seno")
-print(figb64())</textarea>
-        <div class="out" data-out>(aguardando)</div>
-      </div>
-    </section>
-
-    <div class="hr"></div>
-
-    <section class="panel">
-      <h2>FCD básico, empresa jovem</h2>
-      <p>Premissas simples para aula, ajuste como quiser.</p>
-      <div class="cell">
-        <div class="cell-head">
-          <div class="cell-title">Python</div>
-          <div class="cell-status" data-status>ok</div>
-          <button class="cell-run" data-run disabled>Rodar</button>
-        </div>
-<textarea spellcheck="false"># Parâmetros
-anos = 10
-receita0 = 2.0e6
-crec = [0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.18,0.16,0.15]
-margem_ebitda = [-0.30,-0.20,-0.10,0.05,0.10,0.15,0.18,0.20,0.22,0.25]
-capex_sobre_receita = 0.06
-nwc_sobre_receita = 0.08
-aliquota = 0.0
-wacc = 0.20
-
-# Projeção de receitas
-receita=[receita0]
-for t in range(anos):
-    receita.append(receita[-1]*(1+crec[t]))
-receita=receita[1:]
+YEARS = 5
 
 import numpy as np, matplotlib.pyplot as plt
+clients = np.zeros(YEARS+1); clients[0] = initial_clients
+new_c = np.zeros(YEARS+1); lost_c = np.zeros(YEARS+1)
+revenue = np.zeros(YEARS+1)
 
-# Demonstração
-ebitda=[r*m for r,m in zip(receita,margem_ebitda)]
-dep=[0.03*r for r in receita]
-ebite=[e-d for e,d in zip(ebitda,dep)]
+for t in range(1, YEARS+1):
+    new_c[t]  = round(clients[t-1]*growth_rate)
+    lost_c[t] = round(clients[t-1]*churn_rate)
+    clients[t]= clients[t-1] + new_c[t] - lost_c[t]
+    revenue[t]= clients[t]*ticket_annual
 
-lucro_oper=[]; imposto=[]; prejuizo_acum=0.0
-for e in ebite:
-    base = e - max(prejuizo_acum,0)
-    imp = max(base,0)*aliquota
-    imposto.append(imp)
-    lucro_oper.append(e-imp)
-    prejuizo_acum += min(e,0)
+print("Clientes ao final de cada ano:", clients.astype(int))
+print("Receita anual estimada:", revenue.astype(int))
 
-nwc=[nwc_sobre_receita*r for r in receita]
-capex=[capex_sobre_receita*r for r in receita]
-
-fcl=[]
-for t in range(anos):
-    delta_nwc = nwc[t] - (nwc[t-1] if t>0 else 0)
-    fcl.append(lucro_oper[t] + dep[t] - capex[t] - delta_nwc)
-
-# Valor terminal
-g=0.04
-vt=fcl[-1]*(1+g)/(wacc-g)
-
-# Desconto
-fc_desc=[f/((1+wacc)**(t+1)) for t,f in enumerate(fcl)]
-vt_desc=vt/((1+wacc)**anos)
-valor_empre=sum(fc_desc)+vt_desc
-print(f"Valor da firma, R$ {valor_empre:,.0f}")
-
-# Gráfico FCL
+# gráfico de evolução de clientes
 plt.figure(figsize=(6.6,3.6))
-plt.plot(range(1,anos+1), fcl, marker='o')
-plt.title('Fluxo de Caixa Livre projetado')
-plt.xlabel('Ano'); plt.ylabel('R$')
+plt.plot(range(0,YEARS+1), clients, marker='o'); plt.title("Base de clientes"); plt.xlabel("Ano"); plt.ylabel("Clientes")
 print(figb64())</textarea>
-        <div class="out" data-out>(aguardando)</div>
+      <div class="out" data-out>(aguardando)</div>
+    </div>
+
+    <p>Discussão rápida. crescimento bruto agressivo pede atenção ao churn, a perda de clientes pode engolir a aquisição se o produto não entregar valor contínuo. Em B2B educacional, renovações dependem de adoção pelos docentes e resultados de aprendizagem.</p>
+  </section>
+
+  <!-- 3. Acrescentando custos e FCL -->
+  <section class="panel">
+    <h2>3. Acrescentando custos, DRE e fluxo de caixa livre</h2>
+    <p>Agora ligamos a operação aos custos. Usamos margem de contribuição sobre a receita para capturar conteúdo e suporte variáveis. Estrutura tem dois blocos. equipe fixa e equipe que escala com a base. CAPEX de implantação por cliente vira ativo que deprecia ao longo do tempo. Capital de giro líquido fica como percentual da receita.</p>
+
+    <div class="cell">
+      <div class="cell-head">
+        <div class="cell-title">DRE e FCL simplificados</div>
+        <div class="cell-status" data-status>ok</div>
+        <button class="cell-run" data-run disabled>Rodar</button>
       </div>
-    </section>
-
-    <div class="hr"></div>
-
-    <section class="panel">
-      <h2>Sensibilidade WACC × g</h2>
-      <p>Mapa rápido de valor com WACC e crescimento terminal.</p>
-      <div class="cell">
-        <div class="cell-head">
-          <div class="cell-title">Python</div>
-          <div class="cell-status" data-status>ok</div>
-          <button class="cell-run" data-run disabled>Rodar</button>
-        </div>
 <textarea spellcheck="false">import numpy as np, matplotlib.pyplot as plt
 
-def valor_firma_wacc_g(fcl, anos, wacc, g):
-    vt = fcl[-1]*(1+g)/(wacc-g)
-    fc_desc=[f/((1+wacc)**(t+1)) for t,f in enumerate(fcl)]
-    vt_desc=vt/((1+wacc)**anos)
-    return sum(fc_desc)+vt_desc
+# Reusa clients e revenue da célula anterior
+assert 'clients' in globals(), "Execute a célula de premissas primeiro"
 
-# Reusa fcl e anos se existirem
-try:
-    fcl
-    anos
-except NameError:
-    fcl=[-1e6,-5e5,2e5,6e5,1.1e6,1.6e6,2.0e6,2.4e6,2.7e6,3.0e6]
-    anos=len(fcl)
+# Premissas de custo e estrutura
+contribution_margin = 0.72           # margem de contribuição sobre receita
+fixed_staff = 15                      # equipe fixa
+staff_per_client = 0.08               # equipe variável por cliente
+avg_salary = 60000                    # R$ por pessoa ao ano
+executive_salary = 120000             # R$ por ano
+rent_per_employee = 8000              # R$ por pessoa ao ano
+setup_per_client = 3000               # CAPEX por cliente acumulado
+depreciation_rate = 0.12              # depreciação anual sobre base acumulada
+tax_rate = 0.34
+wcr_pct = 0.35                        # capital de giro líquido em proporção da receita
+initial_wcr = 150000
+perpetuity_growth = 0.06
+riskfree = 0.12; beta = 1.0; premio_mercado = 0.08; premio_liquidez = 0.30
+wacc = riskfree + beta*premio_mercado + premio_liquidez
 
+years = YEARS
+cogs = revenue * (1 - contribution_margin)
+gross_profit = revenue - cogs
+
+total_staff = np.round(fixed_staff + clients * staff_per_client); total_staff[0]=0
+salaries = total_staff * avg_salary
+rent_expenses = total_staff * rent_per_employee
+opex = salaries + rent_expenses + executive_salary; opex[0]=0
+
+cumulative_capex = clients * setup_per_client
+depreciation = cumulative_capex * depreciation_rate; depreciation[0]=0
+capex = np.zeros(years+1); capex[0]=cumulative_capex[0]
+for t in range(1, years+1):
+    capex[t] = cumulative_capex[t] - cumulative_capex[t-1] + depreciation[t]
+
+ebit = gross_profit - opex - depreciation
+taxes = (ebit*tax_rate)*(ebit>0)
+nopat = ebit - taxes
+fco = nopat + depreciation
+
+wcr = revenue * wcr_pct; wcr[0]=initial_wcr
+wcr_inv = np.zeros(years+1); wcr_inv[0]=wcr[0]
+for t in range(1, years+1):
+    wcr_inv[t] = wcr[t]-wcr[t-1]
+
+fcff = fco - capex - wcr_inv
+
+# Valor presente e terminal
+pv_fcff = np.array([fcff[t]/((1+wacc)**t) if t>0 else 0 for t in range(years+1)])
+terminal_nopat = nopat[years]
+reinv_rate = perpetuity_growth / wacc
+terminal_fcf = terminal_nopat * (1 - reinv_rate) * (1 + perpetuity_growth)
+pv_terminal = terminal_fcf / (wacc - perpetuity_growth) / ((1+wacc)**years)
+enterprise_value = pv_fcff[1:].sum() + pv_terminal
+
+print(f"Valor da firma no cenário base, R$ {enterprise_value:,.0f}")
+
+plt.figure(figsize=(6.6,3.6))
+plt.plot(range(1,years+1), fcff[1:], marker='o'); plt.title("Fluxo de Caixa Livre projetado"); plt.xlabel("Ano"); plt.ylabel("R$")
+print(figb64())</textarea>
+      <div class="out" data-out>(aguardando)</div>
+    </div>
+
+    <p>Leitura crítica. se o FCL negativo aparece nos primeiros anos, isso não é derrota, é aviso de capital a aportar. A pergunta certa, quanto, quando e por quê. Esse porquê precisa estar amarrado ao plano comercial e ao produto.</p>
+  </section>
+
+  <!-- 4. Monte Carlo, passo a passo -->
+  <section class="panel">
+    <h2>4. Monte Carlo, passo a passo</h2>
+    <p>Simulação serve para abraçar incerteza com método. Não vira loteria, vira gestão de risco. Primeiro definimos como sorteamos cada premissa. Depois repetimos o cálculo de valuation muitas vezes.</p>
+
+    <div class="cell">
+      <div class="cell-head">
+        <div class="cell-title">Sorteio de premissas</div>
+        <div class="cell-status" data-status>ok</div>
+        <button class="cell-run" data-run disabled>Rodar</button>
+      </div>
+<textarea spellcheck="false">import numpy as np
+
+def draw_tri(minv, mode, maxv):
+    return np.random.triangular(minv, mode, maxv)
+
+def sample_params():
+    p = {}
+    p['growth_rate'] = draw_tri(0.60, 1.20, 1.50)    # aquisição bruta
+    p['churn_rate']  = draw_tri(0.05, 0.15, 0.30)    # cancelamento
+    p['ticket_annual']=draw_tri(12000, 14000, 17000) # ticket anual
+    p['contribution_margin']=draw_tri(0.60, 0.72, 0.82)
+    p['staff_per_client']=draw_tri(0.06, 0.08, 0.10)
+    p['avg_salary']=draw_tri(50000, 60000, 75000)
+    p['rent_per_employee']=draw_tri(6000, 8000, 10000)
+    p['setup_per_client']=draw_tri(2500, 3000, 4000)
+    p['depreciation_rate']=draw_tri(0.08, 0.12, 0.14)
+    # custo de capital pedagógico
+    riskfree=0.12; beta=1.0; premio_mercado=0.08; premio_liquidez=0.30
+    p['wacc'] = riskfree + beta*premio_mercado + premio_liquidez
+    return p
+
+# teste rápido
+s = [sample_params() for _ in range(3)]
+print("Exemplo de três amostras:", {k:round(v,3) for k,v in s[0].items()})</textarea>
+      <div class="out" data-out>(aguardando)</div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-head">
+        <div class="cell-title">Loop de simulação e leitura de risco</div>
+        <div class="cell-status" data-status>ok</div>
+        <button class="cell-run" data-run disabled>Rodar</button>
+      </div>
+<textarea spellcheck="false">import numpy as np, matplotlib.pyplot as plt
+
+def valuation_from_params(p):
+    years = YEARS
+    clients_mc = np.zeros(years+1); clients_mc[0]=initial_clients
+    new_c = np.zeros(years+1); lost_c = np.zeros(years+1)
+    revenue_mc = np.zeros(years+1)
+
+    for t in range(1, years+1):
+        new_c[t]  = round(clients_mc[t-1]*p['growth_rate'])
+        lost_c[t] = round(clients_mc[t-1]*p['churn_rate'])
+        clients_mc[t]= clients_mc[t-1] + new_c[t] - lost_c[t]
+        revenue_mc[t]= clients_mc[t]*p['ticket_annual']
+
+    cogs = revenue_mc*(1-p['contribution_margin'])
+    gross = revenue_mc - cogs
+
+    total_staff = np.round(fixed_staff + clients_mc*p['staff_per_client']); total_staff[0]=0
+    salaries = total_staff*p['avg_salary']
+    rent = total_staff*p['rent_per_employee']
+    opex = salaries + rent + executive_salary; opex[0]=0
+
+    cumulative_capex = clients_mc*p['setup_per_client']
+    depreciation = cumulative_capex*p['depreciation_rate']; depreciation[0]=0
+    capex = np.zeros(years+1); capex[0]=cumulative_capex[0]
+    for t in range(1, years+1):
+        capex[t] = cumulative_capex[t]-cumulative_capex[t-1]+depreciation[t]
+
+    ebit = gross - opex - depreciation
+    taxes = (ebit*tax_rate)*(ebit>0)
+    nopat = ebit - taxes
+    fco = nopat + depreciation
+
+    wcr = revenue_mc*wcr_pct; wcr[0]=initial_wcr
+    wcr_inv = np.zeros(years+1); wcr_inv[0]=wcr[0]
+    for t in range(1, years+1):
+        wcr_inv[t] = wcr[t]-wcr[t-1]
+
+    fcff_mc = fco - capex - wcr_inv
+    pv_fcff = np.array([fcff_mc[t]/((1+p['wacc'])**t) if t>0 else 0 for t in range(years+1)])
+
+    terminal_nopat = nopat[years]
+    reinv_rate = perpetuity_growth / p['wacc']
+    terminal_fcf = terminal_nopat*(1 - reinv_rate)*(1+perpetuity_growth)
+    pv_terminal = terminal_fcf/(p['wacc']-perpetuity_growth)/((1+p['wacc'])**years)
+    ev = pv_fcff[1:].sum() + pv_terminal
+    return ev, fcff_mc
+
+def run_mc(n=2000):
+    vals=[]; neg_runs=0
+    for i in range(n):
+        p = sample_params()
+        ev, fc = valuation_from_params(p)
+        vals.append(ev)
+        if fc[1:].min()<0:
+            neg_runs+=1
+    return np.array(vals), neg_runs/n
+
+vals, prob_neg = run_mc(n=2000)
+med = np.median(vals); p5=np.percentile(vals,5); p95=np.percentile(vals,95)
+print(f"Mediana, R$ {med:,.0f} | 5% R$ {p5:,.0f} | 95% R$ {p95:,.0f}")
+print(f"Probabilidade de FCL negativo em pelo menos um ano, {prob_neg:.1%}")
+
+plt.figure(figsize=(6.6,3.6))
+plt.hist(vals/1e6, bins=40, alpha=.9)
+plt.title("Distribuição do valor da firma")
+plt.xlabel("R$ milhões"); plt.ylabel("Frequência")
+print(figb64())</textarea>
+      <div class="out" data-out>(aguardando)</div>
+    </div>
+
+    <p>Leitura dos resultados. Mediana informa o valor central. Caudas mostram risco e oportunidade. Probabilidade de FCL negativo aponta momentos de necessidade de capital. Para B2B educacional, observe o peso do churn e do ticket sobre o valor.</p>
+  </section>
+
+  <!-- 5. Sensibilidade enxuta -->
+  <section class="panel">
+    <h2>5. Sensibilidade rápida</h2>
+    <p>Dois mapas ajudam muito em turma. um tornado simples de impacto individual e uma matriz WACC por crescimento terminal. Aqui vamos de matriz WACC por g, usando o FCL do cenário base.</p>
+
+    <div class="cell">
+      <div class="cell-head">
+        <div class="cell-title">Matriz WACC por g terminal</div>
+        <div class="cell-status" data-status>ok</div>
+        <button class="cell-run" data-run disabled>Rodar</button>
+      </div>
+<textarea spellcheck="false">import numpy as np, matplotlib.pyplot as plt
+
+# reusa fcff do cenário base
+assert 'fcff' in globals(), "Execute a célula de DRE e FCL antes"
+
+def valor_firma_wacc_g(fcl, years, wacc, g):
+    disc = sum([fcl[t]/((1+wacc)**t) for t in range(1, years+1)])
+    vt = ( (fcl[years] + 0) * (1+g) )/(wacc-g)   # aproxima o NOPAT por fcl do último ano
+    return disc + vt/((1+wacc)**years)
+
+years = YEARS
 wacc_grid=np.linspace(0.14,0.28,8)
 g_grid=np.linspace(0.01,0.05,5)
 mat=np.zeros((len(wacc_grid),len(g_grid)))
 for i,w in enumerate(wacc_grid):
     for j,g in enumerate(g_grid):
-        mat[i,j]=valor_firma_wacc_g(fcl, anos, w, g)
+        mat[i,j]=valor_firma_wacc_g(fcff, years, w, g)
 
-plt.figure(figsize=(6.5,4.2))
-plt.imshow(mat,origin='lower',aspect='auto')
-plt.xticks(range(len(g_grid)),[f"{g:.2%}" for g in g_grid])
-plt.yticks(range(len(wacc_grid)),[f"{w:.0%}" for w in wacc_grid])
-plt.xlabel('g terminal'); plt.ylabel('WACC'); plt.title('Sensibilidade do Valor da Firma')
-print("Exemplo, WACC 22%, g 3%:", round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03)))
+plt.figure(figsize=(6.6,4.0))
+plt.imshow(mat/1e6, origin='lower', aspect='auto')
+plt.xticks(range(len(g_grid)),[f"{x:.0%}" for x in g_grid])
+plt.yticks(range(len(wacc_grid)),[f"{x:.0%}" for x in wacc_grid])
+plt.xlabel("g terminal"); plt.ylabel("WACC"); plt.title("Sensibilidade do Valor, R$ milhões")
 print(figb64())</textarea>
-        <div class="out" data-out>(aguardando)</div>
-      </div>
-    </section>
+      <div class="out" data-out>(aguardando)</div>
+    </div>
+  </section>
 
-    <footer style="opacity:.75;margin-top:26px">
-      <small>Roda localmente via Pyodide. O primeiro carregamento pode demorar um pouco.</small>
-    </footer>
-  </div>
+  <!-- 6. Guia para o aluno -->
+  <section class="panel">
+    <h2>6. Guia de estudo do aluno</h2>
+    <ol>
+      <li>Conte a história da EduConnect em cinco linhas. quem compra, por que renova, onde mora o gargalo.</li>
+      <li>Preencha premissas com fontes e datas. CRM, contratos, relatórios setoriais, entrevistas. nada de número solto.</li>
+      <li>Rode o cenário base e confira DRE e FCL. se algo parece mágico, revisite premissas.</li>
+      <li>Rode a simulação. comente mediana, caudas e probabilidade de FCL negativo.</li>
+      <li>Leia a sensibilidade WACC por g. explique o que mais move valor aqui e por quê.</li>
+      <li>Conclusão. recomendações, próximos dados a coletar e plano de mitigação de risco.</li>
+    </ol>
+  </section>
 
-  <script>
-    let PY = null;
+  <footer style="opacity:.8;margin-top:26px">
+    <small>Roda localmente via Pyodide. Material didático para publicação. EdTech B2B vendendo para escolas e empresas.</small>
+  </footer>
+</div>
 
-    async function boot(){
-      const cells = document.querySelectorAll('.cell');
-      const firstStatus = cells[0].querySelector('[data-status]');
-      try{
-        firstStatus.textContent = 'baixando pacotes…';
-        PY = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/" });
-        await PY.loadPackage(["numpy","matplotlib"]);
-        // helpers de gráfico
-        await PY.runPythonAsync(`
+<script>
+let PY=null;
+
+// boot do ambiente e helper de imagem
+async function boot(){
+  const state=document.getElementById('boot-state');
+  try{
+    state.textContent='Baixando pacotes…';
+    PY = await loadPyodide({ indexURL:"https://cdn.jsdelivr.net/pyodide/v0.25.1/full/" });
+    await PY.loadPackage(["numpy","matplotlib"]);
+    await PY.runPythonAsync(`
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import io, base64, sys
-def showfig():
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=160, bbox_inches='tight')
-    buf.seek(0)
-    sys.stdout.write('__IMG__' + base64.b64encode(buf.getvalue()).decode('ascii'))
-    plt.close('all')
+
 def figb64():
-    buf = io.BytesIO()
+    buf=io.BytesIO()
     plt.tight_layout()
     plt.savefig(buf, format='png', dpi=160, bbox_inches='tight')
     buf.seek(0)
-    s = '__IMG__' + base64.b64encode(buf.getvalue()).decode('ascii')
+    s='__IMG__'+base64.b64encode(buf.getvalue()).decode('ascii')
     plt.close('all')
     return s
 `);
-        document.querySelectorAll('.cell .cell-run').forEach(b => b.disabled = false);
-        document.querySelectorAll('.cell [data-status]').forEach(s => s.textContent = 'ok');
+    document.querySelectorAll('.cell .cell-run').forEach(b=>b.disabled=false);
+    document.querySelectorAll('.cell [data-status]').forEach(s=>s.textContent='ok');
+    state.textContent='Pronto';
+    state.classList.add('badge','ok');
+  }catch(e){
+    console.error(e);
+    state.textContent='Erro ao carregar, '+(e?.message||e);
+    state.classList.add('badge','warn');
+  }
+}
+
+function attach(){
+  document.querySelectorAll('.cell').forEach(cell=>{
+    const run=cell.querySelector('[data-run]');
+    const out=cell.querySelector('[data-out]');
+    const status=cell.querySelector('[data-status]');
+    const ta=cell.querySelector('textarea');
+    run.addEventListener('click', async ()=>{
+      if(!PY) return;
+      run.disabled=true; status.textContent='executando…'; out.textContent='';
+      let buf=''; let ret='';
+      const o1 = PY.setStdout({ batched:s=>buf+=s });
+      const o2 = PY.setStderr({ batched:s=>buf+=s });
+      try{
+        ret = await PY.runPythonAsync(ta.value);
       }catch(e){
-        firstStatus.textContent = 'erro ao carregar, ' + (e && e.message ? e.message : e);
-        console.error(e);
+        buf += '\\nErro, ' + (e?.message||e);
+      }finally{
+        PY.setStdout(o1); PY.setStderr(o2);
       }
-    }
+      let combined = buf || '';
+      if(typeof ret==='string') combined += ret;
 
-    function attach(){
-      document.querySelectorAll('.cell').forEach(cell => {
-        const run = cell.querySelector('[data-run]');
-        const out = cell.querySelector('[data-out]');
-        const status = cell.querySelector('[data-status]');
-        const ta = cell.querySelector('textarea');
-        run.addEventListener('click', async () => {
-          if(!PY) return;
-          run.disabled = true; status.textContent = 'executando…'; out.textContent = '';
-          let buf = '';
-          const o1 = PY.setStdout({ batched: s => buf += s });
-          const o2 = PY.setStderr({ batched: s => buf += s });
-          let ret = '';
-          try {
-            ret = await PY.runPythonAsync(ta.value);
-          } catch(e) {
-            buf += '\nErro: ' + (e && e.message ? e.message : e);
-          } finally {
-            PY.setStdout(o1); PY.setStderr(o2);
-          }
+      // extrai todas as imagens e preserva texto
+      const imgRegex = /__IMG__([A-Za-z0-9+/=]+)/g;
+      const images=[]; combined = combined.replace(imgRegex,(_,b64)=>{ if(b64 && b64.length>10) images.push(b64.trim()); return ''});
+      const textOnly = combined.trim();
+      out.textContent = textOnly || (images.length ? '(gráfico gerado)' : '(sem saída)');
 
-          // Junta stdout e retorno, extrai TODAS as imagens e mantém todo o texto
-          let combined = buf || '';
-          if (typeof ret === 'string') combined += ret;
+      for(const b64 of images){
+        const img = new Image();
+        img.src='data:image/png;base64,'+b64; img.loading='lazy'; img.decoding='async'; img.style.maxWidth='100%';
+        out.appendChild(img);
+      }
+      status.textContent='ok'; run.disabled=false;
+    });
+  });
+}
 
-          const imgRegex = /__IMG__([A-Za-z0-9+/=]+)/g;
-          const images = [];
-          combined = combined.replace(imgRegex, (_, b64) => {
-            if (b64 && b64.length > 10) images.push(b64.trim());
-            return '';
-          });
-
-          const textOnly = combined.trim();
-          out.textContent = textOnly || (images.length ? '(gráfico gerado)' : '(sem saída)');
-
-          for (const b64 of images) {
-            const img = new Image();
-            img.src = 'data:image/png;base64,' + b64;
-            img.style.maxWidth = '100%';
-            img.loading = 'lazy';
-            img.decoding = 'async';
-            out.appendChild(img);
-          }
-
-          status.textContent = 'ok'; run.disabled = false;
-        });
-      });
-    }
-
-    attach(); boot();
-  </script>
+attach(); boot();
+</script>
 </body>
 </html>
