@@ -52,7 +52,7 @@ print("Matplotlib:", matplotlib.__version__)
 x = np.linspace(0,6.28,200)
 y = np.sin(x)
 plt.plot(x,y); plt.title("Seno")
-figb64()</textarea>
+print(figb64())</textarea>
         <div class="out" data-out>(aguardando)</div>
       </div>
     </section>
@@ -122,7 +122,7 @@ plt.figure(figsize=(6.6,3.6))
 plt.plot(range(1,anos+1), fcl, marker='o')
 plt.title('Fluxo de Caixa Livre projetado')
 plt.xlabel('Ano'); plt.ylabel('R$')
-figb64()</textarea>
+print(figb64())</textarea>
         <div class="out" data-out>(aguardando)</div>
       </div>
     </section>
@@ -168,7 +168,7 @@ plt.yticks(range(len(wacc_grid)),[f"{w:.0%}" for w in wacc_grid])
 plt.xlabel('g terminal'); plt.ylabel('WACC'); plt.title('Sensibilidade do Valor da Firma')
 txt = f"Exemplo, WACC 22%, g 3%: {round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03))}"
 print(txt)
-figb64()</textarea>
+print(figb64())</textarea>
         <div class="out" data-out>(aguardando)</div>
       </div>
     </section>
