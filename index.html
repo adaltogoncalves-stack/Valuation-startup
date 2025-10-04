@@ -25,6 +25,7 @@
     .notice{border-left:4px solid var(--accent);padding:10px 12px;background:rgba(78,161,255,.08);border-radius:10px;margin:8px 0}
     .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);margin:22px 0}
   </style>
+  <!-- Pyodide global, compatível com GitHub Pages -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 </head>
 <body>
@@ -32,7 +33,7 @@
     <header>
       <h1>Avaliação de Empresas Jovens com Python, implementação prática do FCD</h1>
       <div class="notice">
-        Use as células abaixo, edite e clique em Rodar. Para gráficos, a célula deve terminar com <code>figb64()</code>, o gráfico aparece logo abaixo. Tudo roda no navegador.
+        Use as células abaixo, edite e clique em Rodar. Para gráficos, finalize a célula com <code>print(figb64())</code>. Tudo roda no navegador.
       </div>
     </header>
 
@@ -107,7 +108,7 @@ for t in range(anos):
     delta_nwc = nwc[t] - (nwc[t-1] if t>0 else 0)
     fcl.append(lucro_oper[t] + dep[t] - capex[t] - delta_nwc)
 
-# Valor terminal em perpetuidade
+# Valor terminal
 g=0.04
 vt=fcl[-1]*(1+g)/(wacc-g)
 
@@ -117,7 +118,7 @@ vt_desc=vt/((1+wacc)**anos)
 valor_empre=sum(fc_desc)+vt_desc
 print(f"Valor da firma, R$ {valor_empre:,.0f}")
 
-# Gráfico do FCL
+# Gráfico FCL
 plt.figure(figsize=(6.6,3.6))
 plt.plot(range(1,anos+1), fcl, marker='o')
 plt.title('Fluxo de Caixa Livre projetado')
@@ -146,7 +147,7 @@ def valor_firma_wacc_g(fcl, anos, wacc, g):
     vt_desc=vt/((1+wacc)**anos)
     return sum(fc_desc)+vt_desc
 
-# Reusa fcl/anos se vier da célula anterior, caso contrário cria exemplo
+# Reusa fcl e anos se existirem
 try:
     fcl
     anos
@@ -166,8 +167,7 @@ plt.imshow(mat,origin='lower',aspect='auto')
 plt.xticks(range(len(g_grid)),[f"{g:.2%}" for g in g_grid])
 plt.yticks(range(len(wacc_grid)),[f"{w:.0%}" for w in wacc_grid])
 plt.xlabel('g terminal'); plt.ylabel('WACC'); plt.title('Sensibilidade do Valor da Firma')
-txt = f"Exemplo, WACC 22%, g 3%: {round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03))}"
-print(txt)
+print("Exemplo, WACC 22%, g 3%:", round(valor_firma_wacc_g(fcl, anos, 0.22, 0.03)))
 print(figb64())</textarea>
         <div class="out" data-out>(aguardando)</div>
       </div>
@@ -188,7 +188,7 @@ print(figb64())</textarea>
         firstStatus.textContent = 'baixando pacotes…';
         PY = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/" });
         await PY.loadPackage(["numpy","matplotlib"]);
-        // helper de gráficos: showfig() escreve em stdout; figb64() retorna string
+        // helpers de gráfico
         await PY.runPythonAsync(`
 import matplotlib
 matplotlib.use('agg')
@@ -232,23 +232,26 @@ def figb64():
           const o2 = PY.setStderr({ batched: s => buf += s });
           let ret = '';
           try {
-            ret = await PY.runPythonAsync(ta.value); // captura retorno (figb64)
+            ret = await PY.runPythonAsync(ta.value);
           } catch(e) {
             buf += '\nErro: ' + (e && e.message ? e.message : e);
           } finally {
             PY.setStdout(o1); PY.setStderr(o2);
           }
-          // junta stdout + retorno
-          let combined = (buf || '');
+
+          // Junta stdout e retorno, extrai TODAS as imagens e mantém todo o texto
+          let combined = buf || '';
           if (typeof ret === 'string') combined += ret;
 
-          let parts = combined.split('__IMG__');
-          const images = parts.slice(1).map(s => s.trim()).filter(s => s.length > 10);
-          const text = (parts[0] || '').trim();
+          const imgRegex = /__IMG__([A-Za-z0-9+/=]+)/g;
+          const images = [];
+          combined = combined.replace(imgRegex, (_, b64) => {
+            if (b64 && b64.length > 10) images.push(b64.trim());
+            return '';
+          });
 
-          if (text) out.textContent = text;
-          else if (images.length) out.textContent = '(gráfico gerado)';
-          else out.textContent = '(sem saída)';
+          const textOnly = combined.trim();
+          out.textContent = textOnly || (images.length ? '(gráfico gerado)' : '(sem saída)');
 
           for (const b64 of images) {
             const img = new Image();
